@@ -1,6 +1,5 @@
 ﻿using ElectronicJournal.Application.Dtos.SchoolClassDtos;
-using ElectronicJournal.Application.Services;
-using Microsoft.AspNetCore.Http;
+using ElectronicJournal.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElectronicJournal.API.Controllers
@@ -9,38 +8,43 @@ namespace ElectronicJournal.API.Controllers
     [ApiController]
     public class SchoolClassController : ControllerBase
     {
-        [HttpPost("Create")]
-        public async Task<IActionResult> Create([FromBody] CreateSchoolClassRequest request, [FromServices] SchoolClassService service, CancellationToken token)
+        private readonly ISchoolClassService _service;
+        public SchoolClassController(ISchoolClassService service)
         {
-            var x = await service.CreateAsync(request, token);
+            _service = service;
+        }
+        [HttpPost("Create")]
+        public async Task<IActionResult> Create([FromBody] CreateSchoolClassRequest request, CancellationToken token)
+        {
+            var x = await _service.CreateAsync(request, token);
             return Ok(x);
         }
 
         [HttpPut("Update")]
-        public IActionResult Update([FromBody] UpdateSchoolClassRequest request, [FromServices] SchoolClassService service, CancellationToken token)
+        public async Task<IActionResult> Update([FromBody] UpdateSchoolClassRequest request, CancellationToken token)
         {
-            var x = service.UpdateAsync(request, token);
+            var x = await _service.UpdateAsync(request, token);
             return Ok(x);
         }
 
         [HttpGet("GetById")]
-        public IActionResult GetById([FromBody] Guid Id, [FromServices] SchoolClassService service, CancellationToken token)
+        public async Task<IActionResult> GetById([FromBody] Guid Id, CancellationToken token)
         {
-            var x = service.GetByIdAsync(Id, token);
+            var x = await _service.GetByIdAsync(Id, token);
             return Ok(x);
         }
 
         [HttpGet("GetOdata")]
-        public IActionResult GetOdata([FromBody] SearchSchoolClassRequest request, [FromServices] SchoolClassService service, CancellationToken token)
+        public async Task<IActionResult> GetOdata([FromQuery] SearchSchoolClassRequest request, CancellationToken token)
         {
-            var x = service.GetOdataAsync(request, token);
+            var x = await _service.GetOdataAsync(request, token);
             return Ok(x);
         }
 
         [HttpDelete("Delet")]
-        public IActionResult Delet(Guid id, [FromServices] SchoolClassService service, CancellationToken token)
+        public async Task<IActionResult> Delet(Guid id, CancellationToken token)
         {
-            var x = service.DeleteAsync(id, token);
+            var x = await _service.DeleteAsync(id, token);
             return Ok(x);
         }
     }

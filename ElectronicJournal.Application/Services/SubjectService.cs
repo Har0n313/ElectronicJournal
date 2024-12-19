@@ -23,6 +23,7 @@ namespace ElectronicJournal.Application.Services
             };
 
             await _subjectRepository.AddAsync(subject, token);
+            await _subjectRepository.SaveChangesAsync();
 
             return new SubjectResponse(subject.Id, subject.Name, subject.TeacherId);
         }
@@ -36,6 +37,9 @@ namespace ElectronicJournal.Application.Services
 
             subject.Name = request.Name;
             subject.TeacherId = request.TeacherId;
+
+            await _subjectRepository.UpdateAsync(subject, token);
+            await _subjectRepository.SaveChangesAsync();
 
             return new SubjectResponse(subject.Id, subject.Name, subject.TeacherId);
         }

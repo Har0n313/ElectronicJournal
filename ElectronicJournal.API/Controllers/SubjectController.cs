@@ -1,5 +1,5 @@
 ﻿using ElectronicJournal.Application.Dtos.SubjectDtos;
-using ElectronicJournal.Application.Services;
+using ElectronicJournal.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElectronicJournal.API.Controllers
@@ -8,38 +8,44 @@ namespace ElectronicJournal.API.Controllers
     [ApiController]
     public class SubjectController : ControllerBase
     {
-        [HttpPost("Create")]
-        public async Task<IActionResult> Create([FromBody] CreateSubjectRequest request, [FromServices] SubjectService service, CancellationToken token)
+        private readonly ISubjectService _service;
+        public SubjectController(ISubjectService service)
         {
-            var x = await service.CreateAsync(request, token);
+            _service = service;
+        }
+
+        [HttpPost("Create")]
+        public async Task<IActionResult> Create([FromBody] CreateSubjectRequest request, CancellationToken token)
+        {
+            var x = await _service.CreateAsync(request, token);
             return Ok(x);
         }
 
         [HttpPut("Update")]
-        public IActionResult Update([FromBody] UpdateSubjectRequest request, [FromServices] SubjectService service, CancellationToken token)
+        public async Task<IActionResult> Update([FromBody] UpdateSubjectRequest request, CancellationToken token)
         {
-            var x = service.UpdateAsync(request, token);
+            var x = await _service.UpdateAsync(request, token);
             return Ok(x);
         }
 
         [HttpGet("GetById")]
-        public IActionResult GetById([FromBody] Guid Id, [FromServices] SubjectService service, CancellationToken token)
+        public async Task<IActionResult> GetById([FromQuery] Guid Id, CancellationToken token)
         {
-            var x = service.GetByIdAsync(Id, token);
+            var x = await _service.GetByIdAsync(Id, token);
             return Ok(x);
         }
 
         [HttpGet("GetOdata")]
-        public IActionResult GetOdata([FromBody] SearchSubjectRequest request, [FromServices] SubjectService service, CancellationToken token)
+        public async Task<IActionResult> GetOdata([FromBody] SearchSubjectRequest request, CancellationToken token)
         {
-            var x = service.GetOdataAsync(request, token);
+            var x = await _service.GetOdataAsync(request, token);
             return Ok(x);
         }
 
         [HttpDelete("Delet")]
-        public IActionResult Delet(Guid id, [FromServices] SubjectService service, CancellationToken token)
+        public async Task<IActionResult> Delet(Guid id, CancellationToken token)
         {
-            var x = service.DeleteAsync(id, token);
+            var x = await _service.DeleteAsync(id, token);
             return Ok(x);
         }
     }

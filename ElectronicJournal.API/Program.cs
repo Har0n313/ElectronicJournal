@@ -1,4 +1,5 @@
 using ElectronicJournal.Application.Interfaces.Repositories;
+using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Application.Services;
 using ElectronicJournal.Infrastructure.Dal.EntityFramework;
 using ElectronicJournal.Infrastructure.Dal.Models;
@@ -8,15 +9,16 @@ using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddScoped<AttendanceService>();
-builder.Services.AddScoped<GradeService>();
-builder.Services.AddScoped<ParentService>();
-builder.Services.AddScoped<ScheduleService>();
-builder.Services.AddScoped<SchoolService>();
-builder.Services.AddScoped<SchoolClassService>();
-builder.Services.AddScoped<StudentService>();
-builder.Services.AddScoped<SubjectService>();
-builder.Services.AddScoped<TeacherService>();
+
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+builder.Services.AddScoped<IGradeService, GradeService>();
+builder.Services.AddScoped<IParentService, ParentService>();
+builder.Services.AddScoped<IScheduleService, ScheduleService>();
+builder.Services.AddScoped<ISchoolService, SchoolService>();
+builder.Services.AddScoped<ISchoolClassService, SchoolClassService>();
+builder.Services.AddScoped<IStudentService, StudentService>();
+builder.Services.AddScoped<ISubjectService, SubjectService>();
+builder.Services.AddScoped<ITeacherService, TeacherService>();
 
 builder.Services.AddScoped<IAttendanceRepository, AttendanceRepository>();
 builder.Services.AddScoped<IGradeRepository, GradeRepository>();
@@ -28,12 +30,10 @@ builder.Services.AddScoped<IStudentRepository, StudentRepository>();
 builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
 builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
 
-// Добавляем сервисы в контейнер
 ConfigureServices(builder.Services, builder.Configuration);
 
 var app = builder.Build();
 
-// Настраиваем промежуточное ПО (Middleware)
 ConfigureMiddleware(app);
 
 app.Run();
@@ -43,10 +43,8 @@ app.Run();
 /// </summary>
 void ConfigureServices(IServiceCollection services, IConfiguration configuration)
 {
-    // Настройка параметров базы данных
     services.Configure<DataBaseSettings>(configuration.GetSection(nameof(DataBaseSettings)));
 
-    // Настройка DbContext
     services.AddDbContext<ElectronicJornalDbContext>((serviceProvider, options) =>
     {
         var dataBaseSettings = serviceProvider.GetRequiredService<IOptions<DataBaseSettings>>().Value;
@@ -57,10 +55,12 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
         });
     });
 
-    // Добавляем контроллеры
-    services.AddControllers();
+    builder.Services.AddControllers().AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 
-    // Настраиваем Swagger
     services.AddEndpointsApiExplorer();
     services.AddSwaggerGen(options =>
     {
@@ -78,20 +78,17 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
 /// </summary>
 void ConfigureMiddleware(WebApplication app)
 {
-    // Подключаем Swagger в режиме разработки и тестирования
     if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Staging"))
     {
         app.UseSwagger();
         app.UseSwaggerUI(options =>
         {
             options.SwaggerEndpoint("/swagger/v1/swagger.json", "Electronic Journal API v1");
-            options.RoutePrefix = string.Empty; // Swagger доступен по корню URL
+            options.RoutePrefix = string.Empty; 
         });
     }
 
-    // Настройка авторизации
     app.UseAuthorization();
 
-    // Маршрутизация контроллеров
     app.MapControllers();
 }

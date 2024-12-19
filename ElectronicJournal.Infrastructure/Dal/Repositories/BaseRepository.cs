@@ -1,5 +1,6 @@
 ﻿using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Domain.Entites;
+using ElectronicJournal.Infrastructure.Dal.EntityFramework;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,7 +10,7 @@ namespace ElectronicJournal.Infrastructure.Dal.Repositories
     {
         private readonly DbContext _context;
 
-        protected BaseRepository(DbContext context)
+        protected BaseRepository(ElectronicJornalDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
@@ -29,8 +30,7 @@ namespace ElectronicJournal.Infrastructure.Dal.Repositories
 
         public async Task<T> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
-            return await _context.Set<T>().FirstOrDefaultAsync(
-                x => x.Id == id, cancellationToken);
+            return await _context.Set<T>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         }
 
         public async Task<IQueryable<T>> GetQueryableAsync(ODataQueryOptions<T> options, CancellationToken cancellationToken = default)

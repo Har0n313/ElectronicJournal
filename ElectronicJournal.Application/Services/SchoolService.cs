@@ -58,8 +58,7 @@ namespace ElectronicJournal.Application.Services
 
         public async Task<ICollection<SchoolResponse>> GetOdataAsync(SearchSchoolRequest request, CancellationToken token)
         {
-            var options = request.ToODataQueryOptions<School>();
-            var queryable = await _schoolRepository.GetQueryableAsync(options, token);
+            var queryable = await _schoolRepository.GetQueryableAsync(request.ODataOptions, token);
             var results = queryable.ToList();
 
             return results.Select(a =>
