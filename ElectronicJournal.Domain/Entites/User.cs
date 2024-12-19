@@ -10,6 +10,8 @@ namespace ElectronicJournal.Domain.Entites
     {
         public FullName FullName { get; set; }
         public DateTime DateofBirth { get; set; }
+        public string PasswordHash { get; set; }
+        public string Email { get; set; }
         public UserRoleEnum Role { get; set; }
 
     }
