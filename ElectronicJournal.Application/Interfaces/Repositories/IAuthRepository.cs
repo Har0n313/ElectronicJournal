@@ -1,12 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ElectronicJournal.Application.Dtos.AuthDtos;
 
 namespace ElectronicJournal.Application.Interfaces.Repositories
 {
-    internal class IAuthRepository
+    public interface IAuthRepository
     {
+        /// <summary>
+        /// Авторизоваться  
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        Task<LoginResponse> Login(LoginRequest request);
+        /// <summary>
+        /// Регистрация
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        Task Registration(RegisterRequest request);
     }
 }

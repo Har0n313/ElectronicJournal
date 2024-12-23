@@ -10,7 +10,7 @@ namespace ElectronicJournal.API.Controllers
     {
         [ApiController]
         [Route("api/[controller]")]
-        public class AuthController : ControllerBase
+        public class AutHController : ControllerBase
         {
             [HttpPost("Login")]
             public async Task<IActionResult> Login([FromBody] LoginRequest request, [FromServices] AuthService service)
@@ -26,4 +26,5 @@ namespace ElectronicJournal.API.Controllers
                 return Ok();
             }
         }
+    }
 }
