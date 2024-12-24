@@ -1,4 +1,5 @@
 ﻿using ElectronicJournal.Application.Dtos.AuthDtos;
+using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,23 +9,25 @@ namespace ElectronicJournal.API.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        [ApiController]
-        [Route("api/[controller]")]
-        public class AutHController : ControllerBase
-        {
-            [HttpPost("Login")]
-            public async Task<IActionResult> Login([FromBody] LoginRequest request, [FromServices] AuthService service)
+        private readonly IAuthService _authService;
+
+            public AuthController(IAuthService authService)
             {
-                var res = await service.Login(request);
-                return Ok(res);
+                _authService = authService;
             }
 
-            [HttpPost("Registration")]
-            public async Task<IActionResult> Registration([FromBody] RegisterRequest request, [FromServices] AuthService service)
+            [HttpPost("login")]
+            public async Task<IActionResult> Login([FromBody] LoginRequest request)
             {
-                await service.Registration(request);
-                return Ok();
+                var response = await _authService.LoginAsync(request.Email, request.Password);
+                return Ok(response);
             }
-        }
+
+            [HttpPost("register")]
+            public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+            {
+                await _authService.RegisterAsync(request.Email, request.Password, request.FullName, request.Role);
+                return Ok("User registered successfully.");
+            }
     }
 }

@@ -1,8 +1,11 @@
 ﻿using ElectronicJournal.Application.Dtos.AuthDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Domain.Entites;
+using ElectronicJournal.Domain.Primitives.Enums;
+using ElectronicJournal.Domain.ValueObject;
 using ElectronicJournal.Infrastructure.Dal.EntityFramework;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -13,71 +16,76 @@ namespace ElectronicJournal.Infrastructure.Dal.Repositories
     public class AuthRepository : IAuthRepository
     {
         private readonly ElectronicJornalDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public AuthRepository(ElectronicJornalDbContext context)
+        public AuthRepository(ElectronicJornalDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
-        public async Task<LoginResponse> Login(LoginRequest request)
+        public async Task<LoginResponse> LoginAsync(string email, string password)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
-                return UnauthorizedAccessException("Invalid email or password.");
+                // Выбрасываем исключение, чтобы прервать выполнение
+                throw new UnauthorizedAccessException("Invalid email or password.");
             }
 
             var token = GenerateJwtToken(user);
 
-            return new LoginResponse
+            // Возвращаем результат в случае успешного выполнения
+            return new LoginResponse(
+                Id: user.Id,
+                Email: user.Email,
+                Token: token,
+                Role: user.Role
+            );
+        }
+
+        public async Task RegisterAsync(string email, string password, FullName fullName, UserRoleEnum role)
+        {
+            if (await _context.Users.AnyAsync(u => u.Email == email))
             {
-                Id = user.Id,
-                Emaile = user.Email,
-                Token = token,
-                Role = user.Role
-            };
-        }
+                throw new Exception("User with this email already exists.");
+            }
 
-        private LoginResponse UnauthorizedAccessException(string v)
-        {
-            throw new NotImplementedException();
-        }
+            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
 
-        public async Task Registration(RegisterRequest request)
-        {
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-           
             var user = new User
             {
-                FullName = request.FullName,
-                DateofBirth = request.DateOfBirth,
-                Email = request.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                Role = request.Role
+                Email = email,
+                PasswordHash = hashedPassword,
+                FullName = fullName,
+                Role = role
             };
 
-            _context.Users.Add(user);
+            await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
         }
 
         private string GenerateJwtToken(User user)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes("YourSecretKey"); 
-
-            var tokenDescriptor = new SecurityTokenDescriptor
+            var claims = new[]
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.Name, user.Email),
-                    new Claim(ClaimTypes.Role, user.Role.ToString())
-                }),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role.ToString())
             };
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(3),
+                signingCredentials: creds);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
     }

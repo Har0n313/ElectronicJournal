@@ -1,10 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace ElectronicJournal.Application.Dtos.AuthDtos
+﻿namespace ElectronicJournal.Application.Dtos.AuthDtos
 {
-    public class LoginRequest
-    {
-        public string Email { get; set; }
-        public string Password { get; set; }
-    }
+    public sealed record LoginRequest(string Email ,string Password);
 }

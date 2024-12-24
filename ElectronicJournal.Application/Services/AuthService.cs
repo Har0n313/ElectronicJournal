@@ -1,14 +1,12 @@
 ﻿using ElectronicJournal.Application.Dtos.AuthDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using ElectronicJournal.Application.Interfaces.Services;
+using ElectronicJournal.Domain.Primitives.Enums;
+using ElectronicJournal.Domain.ValueObject;
 
 namespace ElectronicJournal.Application.Services
 {
-    public class AuthService
+    public class AuthService : IAuthService
     {
         private readonly IAuthRepository _authRepository;
 
@@ -17,24 +15,14 @@ namespace ElectronicJournal.Application.Services
             _authRepository = authRepository;
         }
 
-        /// <summary>
-        /// Авторизоваться  
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public async Task<LoginResponse> Login(LoginRequest request)
+        public async Task<LoginResponse> LoginAsync (string email, string password)
         {
-            var res = await _authRepository.Login(request);
-            return res;
+            return await _authRepository.LoginAsync(email, password);
         }
-        /// <summary>
-        /// Регистрация
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public async Task Registration(RegisterRequest request)
+
+        public async Task RegisterAsync(string email, string password, FullName fullName, UserRoleEnum role)
         {
-            await _authRepository.Registration(request);
+            await _authRepository.RegisterAsync(email, password, fullName, role);
         }
     }
 }
