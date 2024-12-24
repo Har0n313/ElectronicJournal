@@ -7,5 +7,6 @@
         Student = 2,
         Administrator = 3,
         Parent = 4,
+        User = 5,
     }
 }

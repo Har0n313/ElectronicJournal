@@ -1,4 +1,6 @@
 ﻿using ElectronicJournal.Application.Dtos.AuthDtos;
+using ElectronicJournal.Domain.Primitives.Enums;
+using ElectronicJournal.Domain.ValueObject;
 
 namespace ElectronicJournal.Application.Interfaces.Repositories
 {
@@ -9,12 +11,12 @@ namespace ElectronicJournal.Application.Interfaces.Repositories
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task<LoginResponse> Login(LoginRequest request);
+        Task<LoginResponse> LoginAsync(string email, string password);
         /// <summary>
         /// Регистрация
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task Registration(RegisterRequest request);
+        Task RegisterAsync(string email, string password, FullName fullName, UserRoleEnum role);
     }
 }
