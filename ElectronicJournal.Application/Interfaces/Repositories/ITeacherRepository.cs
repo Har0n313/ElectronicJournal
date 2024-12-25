@@ -2,7 +2,7 @@
 
 namespace ElectronicJournal.Application.Interfaces.Repositories
 {
-    public interface ITeacherRepository : IRepository<Teacher>
+    public interface ITeacherRepository : IRepository<Teacher>, IRegistrationRepository
     {
     }
 }

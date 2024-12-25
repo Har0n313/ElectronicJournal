@@ -1,4 +1,5 @@
-﻿using ElectronicJournal.Application.Dtos.SchoolClassDtos;
+﻿using AutoMapper;
+using ElectronicJournal.Application.Dtos.SchoolClassDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
@@ -7,27 +8,25 @@ namespace ElectronicJournal.Application.Services
 {
     public class SchoolClassService : ISchoolClassService
     {
-        public readonly ISchoolClassRepository _schoolClassRepository;
+        private readonly ISchoolClassRepository _schoolClassRepository;
+        private readonly IMapper _mapper;
 
-        public SchoolClassService(ISchoolClassRepository schoolClassRepository)
+        public SchoolClassService(ISchoolClassRepository schoolClassRepository, IMapper mapper)
         {
             _schoolClassRepository = schoolClassRepository;
+            _mapper = mapper;
         }
 
         public async Task<SchoolClassResponse> CreateAsync(CreateSchoolClassRequest request, CancellationToken token)
         {
-            var schoolClass = new SchoolClass
-            {
-                Name = request.Name,
-                Description = request.Description,
-                TeacherId = request.TeacherId,
-                SchoolId = request.SchoolId,
-            };
+            var schoolClass = _mapper.Map<SchoolClass>(request);
 
-            await _schoolClassRepository.AddAsync(schoolClass, token);
+            var createSchoolClass = _schoolClassRepository.AddAsync(schoolClass, token);
             await _schoolClassRepository.SaveChangesAsync();
 
-            return new SchoolClassResponse(schoolClass.Id, schoolClass.Name, schoolClass.Description, schoolClass.TeacherId, schoolClass.SchoolId);
+            var response = _mapper.Map<SchoolClassResponse>(createSchoolClass);
+
+            return response;
         }
 
         public async Task<SchoolClassResponse> UpdateAsync(UpdateSchoolClassRequest request, CancellationToken token)
@@ -37,15 +36,14 @@ namespace ElectronicJournal.Application.Services
             if (schoolClass == null)
                 throw new Exception("SchoolClass not found");
 
-            schoolClass.Name = request.Name;
-            schoolClass.Description = request.Description;
-            schoolClass.TeacherId = request.TeacherId;
-            schoolClass.SchoolId = request.SchoolId;
+            _mapper.Map(request, schoolClass);
 
             await _schoolClassRepository.UpdateAsync(schoolClass, token);
             await _schoolClassRepository.SaveChangesAsync();
 
-            return new SchoolClassResponse(schoolClass.Id, schoolClass.Name, schoolClass.Description, schoolClass.TeacherId, schoolClass.SchoolId);
+            var response = _mapper.Map<SchoolClassResponse>(schoolClass);
+            
+            return response;
         }
 
         public async Task<SchoolClassResponse> GetByIdAsync(Guid id, CancellationToken token)

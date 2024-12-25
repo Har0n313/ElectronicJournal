@@ -1,4 +1,5 @@
-﻿using ElectronicJournal.Application.Dtos.GradeDtos;
+﻿using AutoMapper;
+using ElectronicJournal.Application.Dtos.GradeDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
@@ -7,27 +8,25 @@ namespace ElectronicJournal.Application.Services
 {
     public class GradeService : IGradeService
     {
-        public readonly IGradeRepository _gradeRepository;
+        private readonly IGradeRepository _gradeRepository;
+        private readonly IMapper _mapper;
 
-        public GradeService(IGradeRepository gradeRepository)
+        public GradeService(IGradeRepository gradeRepository, IMapper mapper)
         {
             _gradeRepository = gradeRepository;
+            _mapper = mapper;
         }
 
         public async Task<GradeResponse> CreateAsync(CreateGradeRequest request, CancellationToken token)
         {
-            var grade = new Grade
-            {
-                StudentId = request.StudentId,
-                SubjectId = request.SubjectId,
-                Date = request.Date,
-                Value = request.Value,
-                Comment = request.Comment,
-            };
-            await _gradeRepository.AddAsync(grade, token);
-            await _gradeRepository.SaveChangesAsync();
+            var grade = _mapper.Map<Grade>(request);
 
-            return new GradeResponse(grade.Id, grade.StudentId, grade.SubjectId, grade.Date, grade.Value, grade?.Comment);
+            var createGrade = _gradeRepository.AddAsync(grade, token);
+            await _gradeRepository.SaveChangesAsync();
+            
+            var response = _mapper.Map<GradeResponse>(createGrade);
+
+            return response;
         }
         public async Task<GradeResponse> UpdateAsync(UpdateGradeRequest request, CancellationToken token)
         {
@@ -36,16 +35,14 @@ namespace ElectronicJournal.Application.Services
             if (grade == null)
                 throw new Exception("Grade not found");
 
-            grade.StudentId = request.StudentId;
-            grade.SubjectId = request.SubjectId;
-            grade.Date = request.Date;
-            grade.Value = request.Value;
-            grade.Comment = request.Comment;
-            
-            await _gradeRepository.UpdateAsync(grade,token);
-            await _gradeRepository.SaveChangesAsync();
+            _mapper.Map(request, grade);
 
-            return new GradeResponse(grade.Id, grade.StudentId, grade.SubjectId, grade.Date, grade.Value, grade?.Comment);
+            await _gradeRepository.UpdateAsync(grade, token);
+            await _gradeRepository.SaveChangesAsync();
+            
+            var response = _mapper.Map<GradeResponse>(grade);
+
+            return response;
         }
 
         public async Task<GradeResponse> GetByIdAsync(Guid id, CancellationToken token)
@@ -54,8 +51,10 @@ namespace ElectronicJournal.Application.Services
 
             if (grade == null)
                 throw new Exception("Grade not fount");
+            
+            var response = _mapper.Map<GradeResponse>(grade);
 
-            return new GradeResponse(grade.Id, grade.StudentId, grade.SubjectId, grade.Date, grade.Value, grade?.Comment);
+            return response;
         }
 
         public async Task<ICollection<GradeResponse>> GetOdataAsync(SearchGradeRequest request, CancellationToken token)

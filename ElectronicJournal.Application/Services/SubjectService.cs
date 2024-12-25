@@ -1,4 +1,5 @@
-﻿using ElectronicJournal.Application.Dtos.SubjectDtos;
+﻿using AutoMapper;
+using ElectronicJournal.Application.Dtos.SubjectDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
@@ -7,25 +8,25 @@ namespace ElectronicJournal.Application.Services
 {
     public class SubjectService : ISubjectService
     {
-        public readonly ISubjectRepository _subjectRepository;
+        private readonly ISubjectRepository _subjectRepository;
+        private readonly IMapper _mapper;
 
-        public SubjectService(ISubjectRepository subjectRepository)
+        public SubjectService(ISubjectRepository subjectRepository, IMapper mapper)
         {
             _subjectRepository = subjectRepository;
+            _mapper = mapper;
         }
 
         public async Task<SubjectResponse> CreateAsync(CreateSubjectRequest request, CancellationToken token)
         {
-            var subject = new Subject
-            {
-                Name = request.Name,
-                TeacherId = request.TeacherId,
-            };
+            var subject = _mapper.Map<Subject>(request);
 
-            await _subjectRepository.AddAsync(subject, token);
+            var createSubject = _subjectRepository.AddAsync(subject, token);
             await _subjectRepository.SaveChangesAsync();
 
-            return new SubjectResponse(subject.Id, subject.Name, subject.TeacherId);
+            var response = _mapper.Map<SubjectResponse>(createSubject);
+
+            return response;
         }
 
         public async Task<SubjectResponse> UpdateAsync(UpdateSubjectRequest request, CancellationToken token)
@@ -35,13 +36,14 @@ namespace ElectronicJournal.Application.Services
             if (subject == null)
                 throw new Exception("Subject not found");
 
-            subject.Name = request.Name;
-            subject.TeacherId = request.TeacherId;
+            _mapper.Map(request, subject);
 
             await _subjectRepository.UpdateAsync(subject, token);
             await _subjectRepository.SaveChangesAsync();
 
-            return new SubjectResponse(subject.Id, subject.Name, subject.TeacherId);
+            var response = _mapper.Map<SubjectResponse>(subject);
+
+            return response;
         }
 
         public async Task<SubjectResponse> GetByIdAsync(Guid id, CancellationToken token)
@@ -51,7 +53,9 @@ namespace ElectronicJournal.Application.Services
             if (subject == null)
                 throw new Exception("Subject not found");
 
-            return new SubjectResponse(subject.Id, subject.Name, subject.TeacherId);
+            var response = _mapper.Map<SubjectResponse>(subject);
+
+            return response;
         }
 
         public async Task<ICollection<SubjectResponse>> GetOdataAsync(SearchSubjectRequest request, CancellationToken token)

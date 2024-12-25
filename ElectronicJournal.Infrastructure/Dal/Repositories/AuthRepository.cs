@@ -1,8 +1,6 @@
 ﻿using ElectronicJournal.Application.Dtos.AuthDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
-using ElectronicJournal.Domain.Entites;
 using ElectronicJournal.Domain.Primitives.Enums;
-using ElectronicJournal.Domain.ValueObject;
 using ElectronicJournal.Infrastructure.Dal.EntityFramework;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -26,53 +24,54 @@ namespace ElectronicJournal.Infrastructure.Dal.Repositories
 
         public async Task<LoginResponse> LoginAsync(string email, string password)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-
-            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            // Ищем пользователя среди учителей
+            var teacher = await _context.Teachers.FirstOrDefaultAsync(t => t.Email == email);
+            if (teacher != null && BCrypt.Net.BCrypt.Verify(password, teacher.PasswordHash))
             {
-                // Выбрасываем исключение, чтобы прервать выполнение
-                throw new UnauthorizedAccessException("Invalid email or password.");
+                return new LoginResponse(
+                    Id: teacher.Id,
+                    Email: teacher.Email,
+                    Token: GenerateJwtToken(teacher.Id, teacher.Email, "Teacher"),
+                    Role: UserRoleEnum.Teacher
+                );
             }
 
-            var token = GenerateJwtToken(user);
-
-            // Возвращаем результат в случае успешного выполнения
-            return new LoginResponse(
-                Id: user.Id,
-                Email: user.Email,
-                Token: token,
-                Role: user.Role
-            );
-        }
-
-        public async Task RegisterAsync(string email, string password, FullName fullName, UserRoleEnum role)
-        {
-            if (await _context.Users.AnyAsync(u => u.Email == email))
+            // Ищем пользователя среди студентов
+            var student = await _context.Students.FirstOrDefaultAsync(s => s.Email == email);
+            if (student != null && BCrypt.Net.BCrypt.Verify(password, student.PasswordHash))
             {
-                throw new Exception("User with this email already exists.");
+                return new LoginResponse(
+                    Id: student.Id,
+                    Email: student.Email,
+                    Token: GenerateJwtToken(student.Id, student.Email, "Student"),
+                    Role: UserRoleEnum.Student
+                );
             }
 
-            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
-
-            var user = new User
+            // Ищем пользователя среди родителей
+            var parent = await _context.Parents.FirstOrDefaultAsync(p => p.Email == email);
+            if (parent != null && BCrypt.Net.BCrypt.Verify(password, parent.PasswordHash))
             {
-                Email = email,
-                PasswordHash = hashedPassword,
-                FullName = fullName,
-                Role = role
-            };
+                return new LoginResponse(
+                    Id: parent.Id,
+                    Email: parent.Email,
+                    Token: GenerateJwtToken(parent.Id, parent.Email, "Parent"),
+                    Role: UserRoleEnum.Parent
+                );
+            }
 
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
+            // Если пользователь не найден
+            throw new UnauthorizedAccessException("Invalid email or password.");
         }
 
-        private string GenerateJwtToken(User user)
+
+        private string GenerateJwtToken(Guid userId, string email, string role)
         {
             var claims = new[]
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role.ToString())
+                new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, email),
+                new Claim(ClaimTypes.Role, role)
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
@@ -87,6 +86,5 @@ namespace ElectronicJournal.Infrastructure.Dal.Repositories
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-
     }
 }

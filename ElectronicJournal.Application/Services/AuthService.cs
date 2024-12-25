@@ -20,9 +20,5 @@ namespace ElectronicJournal.Application.Services
             return await _authRepository.LoginAsync(email, password);
         }
 
-        public async Task RegisterAsync(string email, string password, FullName fullName, UserRoleEnum role)
-        {
-            await _authRepository.RegisterAsync(email, password, fullName, role);
-        }
     }
 }

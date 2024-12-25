@@ -1,33 +1,41 @@
-﻿using ElectronicJournal.Application.Dtos.ParentDtos;
+﻿using AutoMapper;
+using ElectronicJournal.Application.Dtos.ParentDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
-using ElectronicJournal.Domain.ValueObject;
-using System.Linq;
 
 namespace ElectronicJournal.Application.Services
 {
     public class ParentService : IParentService
     {
-        public readonly IParentRepository _parentRepository;
+        private readonly IParentRepository _parentRepository;
+        private readonly IRegistrationRepository _registrationRepository;
+        private readonly IMapper _mapper;
 
-        public ParentService(IParentRepository parentRepository)
+        public ParentService(IParentRepository parentRepository, IMapper mapper)
         {
             _parentRepository = parentRepository;
+            _mapper = mapper;
         }
 
         public async Task<ParentResponse> CreateAsync(CreateParentRequest request, CancellationToken token)
         {
-            var parent = new Parent
+            var isEmailTaken = await _registrationRepository.IsEmailTakenAsync(request.Email, token);
+            if (isEmailTaken)
             {
-                FullName = new FullName(request.FirstName, request.LastName, request?.MiddleName),
-                DateofBirth = request.dateofBith,
-            };
+                throw new InvalidOperationException("A user with this email already exists.");
+            }
 
-            await _parentRepository.AddAsync(parent, token);
+            var hashpassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+            var parent = _mapper.Map<Parent>(request);
+
+            var createParent = _parentRepository.AddAsync(parent, token);
             await _parentRepository.SaveChangesAsync();
-
-            return new ParentResponse(parent.Id, parent.FullName, parent.DateofBirth);
+            
+            var respone = _mapper.Map<ParentResponse>(createParent);
+            
+            return respone;
         }
 
         public async Task<ParentResponse> UpdateAsync(UpdateParentRequest request, CancellationToken token)
@@ -37,13 +45,14 @@ namespace ElectronicJournal.Application.Services
             if (parent == null)
                 throw new Exception("Parent not found");
 
-            parent.FullName = new FullName(request.FirstName, request.LastName, request?.MiddleName);
-            parent.DateofBirth = request.dateOfBith;
+            _mapper.Map(request, parent);
 
             await _parentRepository.UpdateAsync(parent, token);
             await _parentRepository.SaveChangesAsync();
+            
+            var respone = _mapper.Map<ParentResponse>(parent);
 
-            return new ParentResponse(parent.Id,parent.FullName, parent.DateofBirth);
+            return respone;
 
         }
 
@@ -53,8 +62,10 @@ namespace ElectronicJournal.Application.Services
 
             if (parent == null)
                 throw new Exception("Parent not found");
+            
+            var response = _mapper.Map<ParentResponse>(parent);
 
-            return new ParentResponse(parent.Id, parent.FullName, parent.DateofBirth);
+            return response;
         }
         public async Task<ICollection<ParentResponse>> GetOdataAsync(SearchParentRequest request, CancellationToken token)
         {
@@ -62,8 +73,7 @@ namespace ElectronicJournal.Application.Services
             var queryable = await _parentRepository.GetQueryableAsync(options, token);
             var result = queryable.ToList();
 
-            return result.Select(a =>
-                new ParentResponse(a.Id, a.FullName, a.DateofBirth)).ToList();
+            return (ICollection<ParentResponse>)result;
         }
 
         public async Task<bool> DeleteAsync(Guid parentId, CancellationToken token)

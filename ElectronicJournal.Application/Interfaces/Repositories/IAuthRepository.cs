@@ -12,11 +12,5 @@ namespace ElectronicJournal.Application.Interfaces.Repositories
         /// <param name="request"></param>
         /// <returns></returns>
         Task<LoginResponse> LoginAsync(string email, string password);
-        /// <summary>
-        /// Регистрация
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        Task RegisterAsync(string email, string password, FullName fullName, UserRoleEnum role);
     }
 }

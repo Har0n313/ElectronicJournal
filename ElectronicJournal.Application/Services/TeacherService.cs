@@ -2,6 +2,7 @@
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
+using ElectronicJournal.Domain.Primitives.Enums;
 using ElectronicJournal.Domain.ValueObject;
 
 namespace ElectronicJournal.Application.Services
@@ -9,6 +10,7 @@ namespace ElectronicJournal.Application.Services
     public class TeacherService : ITeacherService
     {
         public readonly ITeacherRepository _teacherRepository;
+        private readonly IRegistrationRepository _registrationRepository;
 
         public TeacherService(ITeacherRepository teacherRepository)
         {
@@ -17,19 +19,28 @@ namespace ElectronicJournal.Application.Services
 
         public async Task<TeacherResponse> CreateAsync(CreateTeacherRequest request, CancellationToken token)
         {
+            var isEmailTaken = await _registrationRepository.IsEmailTakenAsync(request.Email, token);
+            if (isEmailTaken)
+            {
+                throw new InvalidOperationException("A user with this email already exists.");
+            }
+            var hashpassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
             var teacher = new Teacher
             {
                 FullName = new FullName(request.FirstName, request.LastName, request?.MiddleName),
-                DateofBirth = request.DateOfBith,
                 AcademicDegree = request.AcademicDegree,
                 Description = request.Description,
                 SchollId = request.SchoolId,
+                Email = request.Email,
+                PasswordHash = hashpassword,
+                Role = UserRoleEnum.Teacher
             };
 
             await _teacherRepository.AddAsync(teacher, token);
             await _teacherRepository.SaveChangesAsync();
 
-            return new TeacherResponse(teacher.Id, teacher.FullName, teacher.DateofBirth, teacher.SchollId, teacher.AcademicDegree, teacher.Description);
+            return new TeacherResponse(teacher.Id, teacher.FullName, teacher.SchollId, teacher.AcademicDegree, teacher.Description);
         }
 
         public async Task<TeacherResponse> UpdateAsync(UpdateTeacherRequest request, CancellationToken token)
@@ -40,7 +51,6 @@ namespace ElectronicJournal.Application.Services
                 throw new Exception("Teacher not found");
 
             teacher.FullName = new FullName(request.FirstName, request.LastName, request?.MiddleName);
-            teacher.DateofBirth = request.DateOfBith;
             teacher.AcademicDegree = request.AcademicDegree;
             teacher.Description = request.Description;
             teacher.SchollId = request.SchoolId;
@@ -48,7 +58,7 @@ namespace ElectronicJournal.Application.Services
             await _teacherRepository.UpdateAsync(teacher, token);
             await _teacherRepository.SaveChangesAsync();
 
-            return new TeacherResponse(teacher.Id, teacher.FullName, teacher.DateofBirth, teacher.SchollId, teacher.AcademicDegree, teacher.Description);
+            return new TeacherResponse(teacher.Id, teacher.FullName, teacher.SchollId, teacher.AcademicDegree, teacher.Description);
         }
 
         public async Task<TeacherResponse> GetByIdAsync(Guid id, CancellationToken token)
@@ -58,7 +68,7 @@ namespace ElectronicJournal.Application.Services
             if (teacher == null)
                 throw new Exception("Teacher not found");
 
-            return new TeacherResponse(teacher.Id, teacher.FullName, teacher.DateofBirth, teacher.SchollId, teacher.AcademicDegree, teacher.Description);
+            return new TeacherResponse(teacher.Id, teacher.FullName, teacher.SchollId, teacher.AcademicDegree, teacher.Description);
         }
 
         public async Task<ICollection<TeacherResponse>> GetOdataAsync(SearchTeacherRequest request, CancellationToken token)
@@ -68,7 +78,7 @@ namespace ElectronicJournal.Application.Services
             var results = queryable.ToList();
 
             return results.Select(a =>
-                new TeacherResponse(a.Id, a.FullName, a.DateofBirth, a.SchollId, a.AcademicDegree, a?.Description)).ToList();
+                new TeacherResponse(a.Id, a.FullName, a.SchollId, a.AcademicDegree, a?.Description)).ToList();
         }
 
         public async Task<bool> DeleteAsync(Guid teacherId, CancellationToken token)

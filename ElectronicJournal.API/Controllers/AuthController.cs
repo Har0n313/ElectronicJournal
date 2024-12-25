@@ -22,12 +22,5 @@ namespace ElectronicJournal.API.Controllers
                 var response = await _authService.LoginAsync(request.Email, request.Password);
                 return Ok(response);
             }
-
-            [HttpPost("register")]
-            public async Task<IActionResult> Register([FromBody] RegisterRequest request)
-            {
-                await _authService.RegisterAsync(request.Email, request.Password, request.FullName, request.Role);
-                return Ok("User registered successfully.");
-            }
     }
 }

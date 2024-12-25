@@ -1,4 +1,5 @@
-﻿using ElectronicJournal.Application.Dtos.SchoolDtos;
+﻿using AutoMapper;
+using ElectronicJournal.Application.Dtos.SchoolDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
@@ -7,27 +8,27 @@ namespace ElectronicJournal.Application.Services
 {
     public class SchoolService : ISchoolService
     {
-        public readonly ISchoolRepository _schoolRepository;
+        private readonly ISchoolRepository _schoolRepository;
+        private readonly IMapper _mapper;
 
-        public SchoolService(ISchoolRepository schoolRepository)
+        public SchoolService(ISchoolRepository schoolRepository, IMapper mapper)
         {
             _schoolRepository = schoolRepository;
+            _mapper = mapper;
         }
 
         public async Task<SchoolResponse> CreateAsync(CreateSchoolRequest request, CancellationToken token)
         {
-            var school = new School
-            {
-                Name = request.Name,
-                Address = request.Address,
-                Description = request.Description,
-            };
+            var school = _mapper.Map<School>(request);
 
-            await _schoolRepository.AddAsync(school,token);
+            var createdSchool = await _schoolRepository.AddAsync(school, token);
             await _schoolRepository.SaveChangesAsync();
 
-            return new SchoolResponse(school.Id, school.Name, school.Address, school?.Description);
+            var response = _mapper.Map<SchoolResponse>(createdSchool);
+
+            return response;
         }
+
 
         public async Task<SchoolResponse> UpdateAsync(UpdateSchoolRequest request, CancellationToken token)
         {
@@ -36,15 +37,16 @@ namespace ElectronicJournal.Application.Services
             if (school == null)
                 throw new Exception("School not found");
 
-            school.Name = request.Name;
-            school.Address = request.Address;
-            school.Description = request.Description;
+            _mapper.Map(request, school);
 
-            await _schoolRepository.UpdateAsync(school,token);
+            await _schoolRepository.UpdateAsync(school, token);
             await _schoolRepository.SaveChangesAsync();
 
-            return new SchoolResponse(school.Id, school.Name, school.Address, school?.Description);
+            var response = _mapper.Map<SchoolResponse>(school);
+
+            return response;
         }
+
 
         public async Task<SchoolResponse> GetByIdAsync(Guid id, CancellationToken token)
         {
@@ -52,8 +54,10 @@ namespace ElectronicJournal.Application.Services
 
             if (school == null)
                 throw new Exception("School not found");
+            
+            var response = _mapper.Map<SchoolResponse>(school);
 
-            return new SchoolResponse(school.Id, school.Name, school.Address, school?.Description);
+            return response;
         }
 
         public async Task<ICollection<SchoolResponse>> GetOdataAsync(SearchSchoolRequest request, CancellationToken token)

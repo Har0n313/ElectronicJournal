@@ -1,4 +1,5 @@
-﻿using ElectronicJournal.Application.Dtos.AttendanceDtos;
+﻿using AutoMapper;
+using ElectronicJournal.Application.Dtos.AttendanceDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
@@ -8,25 +9,24 @@ namespace ElectronicJournal.Application.Services
     public class AttendanceService : IAttendanceService
     {
         private readonly IAttendanceRepository _attendanceRepository;
+        private readonly IMapper _mapper;
 
-        public AttendanceService(IAttendanceRepository repository)
+        public AttendanceService(IAttendanceRepository repository, IMapper mapper)
         {
             _attendanceRepository = repository;
+            _mapper = mapper;
         }
 
         public async Task<AttendanceResponse> CreateAsync(CreateAttendanceRequest request, CancellationToken token)
         {
-            var attendance = new Attendance
-            {
-                StudentId = request.StudentId,
-                Date = request.Date,
-                Status = request.Status
-            };
+            var attendance = _mapper.Map<Attendance>(request);
 
-            await _attendanceRepository.AddAsync(attendance, token);
+            var createAttendance = _attendanceRepository.AddAsync(attendance, token);
             await _attendanceRepository.SaveChangesAsync();
 
-            return new AttendanceResponse(attendance.Id, attendance.StudentId, attendance.Date, attendance.Status);
+            var responce = _mapper.Map<AttendanceResponse>(createAttendance);
+
+            return responce;
         }
 
         public async Task<AttendanceResponse> UpdateAsync(UpdateAttendanceRequest request, CancellationToken token)
@@ -36,21 +36,23 @@ namespace ElectronicJournal.Application.Services
             if (attendance == null)
                 throw new Exception("Attendance not found");
 
-            attendance.StudentId = request.StudentId;
-            attendance.Date = request.Date;
-            attendance.Status = request.Status;
+            _mapper.Map(request, attendance);
 
             await _attendanceRepository.UpdateAsync(attendance, token);
             await _attendanceRepository.SaveChangesAsync();
 
-            return new AttendanceResponse(attendance.Id, attendance.StudentId, attendance.Date, attendance.Status);
+            var response = _mapper.Map<AttendanceResponse>(attendance);
+
+            return response;
         }
 
         public async Task<AttendanceResponse> GetByIdAsync(Guid id, CancellationToken token)
         {
             var attendance = await _attendanceRepository.GetByIdAsync(id, token);
 
-            return new AttendanceResponse(attendance.Id, attendance.StudentId, attendance.Date, attendance.Status);
+            var response = _mapper.Map<AttendanceResponse>(attendance);
+            
+            return response;
         }
 
         public async Task<ICollection<AttendanceResponse>> GetOdataAsync(SearchAttendanceRequest request, CancellationToken token)

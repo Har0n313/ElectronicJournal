@@ -1,4 +1,5 @@
-﻿using ElectronicJournal.Application.Dtos.ScheduleDtos;
+﻿using AutoMapper;
+using ElectronicJournal.Application.Dtos.ScheduleDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
@@ -7,27 +8,25 @@ namespace ElectronicJournal.Application.Services
 {
     public class ScheduleService : IScheduleService
     {
-        public readonly IScheduleRepository _scheduleRepository;
+        private readonly IScheduleRepository _scheduleRepository;
+        private readonly IMapper _mapper;
 
-        public ScheduleService(IScheduleRepository scheduleRepository)
+        public ScheduleService(IScheduleRepository scheduleRepository, IMapper mapper)
         {
             _scheduleRepository = scheduleRepository;
+            _mapper = mapper;
         }
 
         public async Task<ScheduleResponse> CreateAsync(CreateScheduleRequest request, CancellationToken token)
         {
-            var schedule = new Schedule
-            {
-                SchoolClassId = request.SchoolClassId,
-                SubjectId = request.SubjectId,
-                Date = request.Date,
-                Time = request.Time
-            };
+            var schedule = _mapper.Map<Schedule>(request);
 
-            await _scheduleRepository.AddAsync(schedule, token);
+            var createSchedule = _scheduleRepository.AddAsync(schedule, token);
             await _scheduleRepository.SaveChangesAsync();
-
-            return new ScheduleResponse(schedule.Id, schedule.SchoolClassId, schedule.SubjectId, schedule.Date, schedule.Time);
+            
+            var response = _mapper.Map<ScheduleResponse>(createSchedule);
+            
+            return response;
         }
         public async Task<ScheduleResponse> UpdateAsync(UpdateScheduleRequest request, CancellationToken token)
         {
@@ -36,15 +35,14 @@ namespace ElectronicJournal.Application.Services
             if (schedule == null)
                 throw new Exception("Schedule not found");
 
-            schedule.SchoolClassId = request.SchoolClassId;
-            schedule.SubjectId = request.SubjectId;
-            schedule.Date = request.Date;
-            schedule.Time = request.Time;
+            _mapper.Map(request, schedule);
 
             await _scheduleRepository.UpdateAsync(schedule, token);
             await _scheduleRepository.SaveChangesAsync();
 
-            return new ScheduleResponse(schedule.Id, schedule.SchoolClassId, schedule.SubjectId, schedule.Date, schedule.Time);
+            var response = _mapper.Map<ScheduleResponse>(schedule);
+
+            return response;
 
         }
 
@@ -55,7 +53,9 @@ namespace ElectronicJournal.Application.Services
             if (schedule == null)
                 throw new Exception("Schedule not found");
 
-            return new ScheduleResponse(schedule.Id, schedule.SchoolClassId, schedule.SubjectId, schedule.Date, schedule.Time);
+            var response = _mapper.Map<ScheduleResponse>(schedule);
+
+            return response;
         }
 
         public async Task<ICollection<ScheduleResponse>> GetOdataAsync(SearchScheduleRequest request, CancellationToken token)

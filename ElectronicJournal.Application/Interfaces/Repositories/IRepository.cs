@@ -26,7 +26,7 @@ namespace ElectronicJournal.Application.Interfaces.Repositories
         /// <param name="entity">Экземпляр сущности для добавления.</param>
         /// <param name="cancellationToken">Токен отмены операции.</param>
         /// <returns>Асинхронная задача.</returns>
-        Task AddAsync(TEntity entity, CancellationToken cancellationToken = default);
+        Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Обновить существующую сущность в хранилище.

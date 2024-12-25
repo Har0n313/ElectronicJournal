@@ -15,9 +15,10 @@ namespace ElectronicJournal.Infrastructure.Dal.Repositories
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
+        public async Task<T> AddAsync(T entity, CancellationToken cancellationToken = default)
         {
-            await _context.Set<T>().AddAsync(entity, cancellationToken);
+            var entit =  await _context.Set<T>().AddAsync(entity, cancellationToken);
+            return entit.Entity;
         }
 
         public Task DeleteAsync(T entity, CancellationToken cancellationToken = default)

@@ -1,34 +1,43 @@
-﻿using ElectronicJournal.Application.Dtos.StudentDtos;
+﻿using AutoMapper;
+using ElectronicJournal.Application.Dtos.StudentDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
+using ElectronicJournal.Domain.Primitives.Enums;
 using ElectronicJournal.Domain.ValueObject;
 
 namespace ElectronicJournal.Application.Services
 {
     public class StudentService : IStudentService
     {
-        public readonly IStudentRepository _studentRepository;
+        private readonly IStudentRepository _studentRepository;
+        private readonly IRegistrationRepository _registrationRepository;
+        private readonly IMapper _mapper;
 
-        public StudentService(IStudentRepository studentRepository)
+        public StudentService(IStudentRepository studentRepository, IMapper mapper)
         {
             _studentRepository = studentRepository;
+            _mapper = mapper;
         }
 
         public async Task<StudentResponse> CreateAsync(CreateStudentRequest request, CancellationToken token)
         {
-            var student = new Student
+            var isEmailTaken = await _registrationRepository.IsEmailTakenAsync(request.Email, token);
+            if (isEmailTaken)
             {
-                FullName = new FullName(request.FirstName, request.LastName, request?.MiddleName),
-                DateofBirth = request.DateofBith,
-                Description = request.Description,
-                ShoolClassId = request.SchoolClassId,
-            };
+                throw new InvalidOperationException("A user with this email already exists.");
+            }
 
-            await _studentRepository.AddAsync(student, token);
+            var hashpassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+            var student = _mapper.Map<Student>(request);
+
+            var createStudent = _studentRepository.AddAsync(student, token);
             await _studentRepository.SaveChangesAsync();
 
-            return new StudentResponse(student.Id, student.FullName, student.DateofBirth, student.ShoolClassId, student?.Description);
+            var response = _mapper.Map<StudentResponse>(createStudent);   
+
+            return new StudentResponse(student.Id, student.FullName, student.ShoolClassId, student?.Description);
         }
 
         public async Task<StudentResponse> UpdateAsync(UpdateStudentRequest request, CancellationToken token)
@@ -38,15 +47,13 @@ namespace ElectronicJournal.Application.Services
             if (student == null)
                 throw new Exception("Student not found");
 
-            student.FullName = new FullName(request.FirstName,request.LastName, request?.MiddleName);
-            student.DateofBirth = request.DateOfBith;
-            student.Description = request.Description;
-            student.ShoolClassId = request.SchoolClassId;
+            _mapper.Map(request, student);
 
             await _studentRepository.UpdateAsync(student,token);
             await _studentRepository.SaveChangesAsync();
 
-            return new StudentResponse(student.Id, student.FullName, student.DateofBirth, student.ShoolClassId, student?.Description);
+            var response = _mapper.Map<StudentResponse>(student);
+            return response;
         }
 
         public async Task<StudentResponse> GetByIdAsync(Guid id, CancellationToken token)
@@ -56,7 +63,9 @@ namespace ElectronicJournal.Application.Services
             if (student == null)
                 throw new Exception("Student not found");
 
-            return new StudentResponse(student.Id, student.FullName, student.DateofBirth, student.ShoolClassId, student?.Description);
+            var response = _mapper.Map<StudentResponse>(student);
+
+            return response;
         }
 
         public async Task<ICollection<StudentResponse>> GetOdataAsync(SearchStudentRequest request, CancellationToken token)
@@ -66,7 +75,7 @@ namespace ElectronicJournal.Application.Services
             var results = queryable.ToList();
 
             return results.Select(a =>
-                new StudentResponse(a.Id, a.FullName, a.DateofBirth, a.ShoolClassId, a.Description)).ToList();
+                new StudentResponse(a.Id, a.FullName, a.ShoolClassId, a.Description)).ToList();
         }
 
         public async Task<bool> DeleteAsync(Guid studentId, CancellationToken token)

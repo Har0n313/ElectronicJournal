@@ -2,7 +2,7 @@
 
 namespace ElectronicJournal.Application.Interfaces.Repositories
 {
-    public interface IStudentRepository : IRepository<Student>
+    public interface IStudentRepository : IRepository<Student>, IRegistrationRepository
     {
     }
 }

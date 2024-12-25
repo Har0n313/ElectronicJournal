@@ -15,8 +15,9 @@ namespace ElectronicJournal.Infrastructure.Dal.EntityFramework
         {
             _options = options.Value;
         }
-
-        public DbSet<User> Users { get; set; }
+        public DbSet<Parent> Parents { get; set; }
+        public DbSet<Student> Students { get; set; }
+        public DbSet<Teacher> Teachers { get; set; }
         public DbSet<Attendance> Attendances { get; set; }
         public DbSet<Grade> Grades { get; set; }
         public DbSet<Schedule> Schedules { get; set; }
@@ -27,15 +28,6 @@ namespace ElectronicJournal.Infrastructure.Dal.EntityFramework
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            modelBuilder.Entity<User>(entity =>
-            {
-                entity.HasKey(u => u.Id);
-                entity.Property(u => u.Email).IsRequired();
-                entity.Property(u => u.PasswordHash).IsRequired();
-                entity.Property(u => u.Role).IsRequired();
-            });
-
 
             // Настройка объекта значения FullName
             modelBuilder.Owned<FullName>();
