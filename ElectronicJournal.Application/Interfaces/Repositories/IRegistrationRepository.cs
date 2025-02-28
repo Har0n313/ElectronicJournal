@@ -1,7 +1,6 @@
-﻿namespace ElectronicJournal.Application.Interfaces.Repositories
+﻿namespace ElectronicJournal.Application.Interfaces.Repositories;
+
+public interface IRegistrationRepository
 {
-    public interface IRegistrationRepository
-    {
-        Task<bool> IsEmailTakenAsync(string email, CancellationToken token);
-    }
+    Task<bool> IsEmailTakenAsync(string email, CancellationToken token);
 }

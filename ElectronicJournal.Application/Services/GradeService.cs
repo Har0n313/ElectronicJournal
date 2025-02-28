@@ -4,80 +4,80 @@ using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
 
-namespace ElectronicJournal.Application.Services
+namespace ElectronicJournal.Application.Services;
+
+public class GradeService : IGradeService
 {
-    public class GradeService : IGradeService
+    private readonly IGradeRepository _gradeRepository;
+    private readonly IMapper _mapper;
+
+    public GradeService(IGradeRepository gradeRepository, IMapper mapper)
     {
-        private readonly IGradeRepository _gradeRepository;
-        private readonly IMapper _mapper;
+        _gradeRepository = gradeRepository;
+        _mapper = mapper;
+    }
 
-        public GradeService(IGradeRepository gradeRepository, IMapper mapper)
-        {
-            _gradeRepository = gradeRepository;
-            _mapper = mapper;
-        }
+    public async Task<GradeResponse> CreateAsync(CreateGradeRequest request, CancellationToken token)
+    {
+        var grade = _mapper.Map<Grade>(request);
 
-        public async Task<GradeResponse> CreateAsync(CreateGradeRequest request, CancellationToken token)
-        {
-            var grade = _mapper.Map<Grade>(request);
+        var createGrade = _gradeRepository.AddAsync(grade, token);
+        await _gradeRepository.SaveChangesAsync();
 
-            var createGrade = _gradeRepository.AddAsync(grade, token);
-            await _gradeRepository.SaveChangesAsync();
-            
-            var response = _mapper.Map<GradeResponse>(createGrade);
+        var response = _mapper.Map<GradeResponse>(createGrade);
 
-            return response;
-        }
-        public async Task<GradeResponse> UpdateAsync(UpdateGradeRequest request, CancellationToken token)
-        {
-            var grade = await _gradeRepository.GetByIdAsync(request.GradeId, token);
+        return response;
+    }
 
-            if (grade == null)
-                throw new Exception("Grade not found");
+    public async Task<GradeResponse> UpdateAsync(UpdateGradeRequest request, CancellationToken token)
+    {
+        var grade = await _gradeRepository.GetByIdAsync(request.GradeId, token);
 
-            _mapper.Map(request, grade);
+        if (grade == null)
+            throw new Exception("Grade not found");
 
-            await _gradeRepository.UpdateAsync(grade, token);
-            await _gradeRepository.SaveChangesAsync();
-            
-            var response = _mapper.Map<GradeResponse>(grade);
+        _mapper.Map(request, grade);
 
-            return response;
-        }
+        await _gradeRepository.UpdateAsync(grade, token);
+        await _gradeRepository.SaveChangesAsync();
 
-        public async Task<GradeResponse> GetByIdAsync(Guid id, CancellationToken token)
-        {
-            var grade = await _gradeRepository.GetByIdAsync(id, token);
+        var response = _mapper.Map<GradeResponse>(grade);
 
-            if (grade == null)
-                throw new Exception("Grade not fount");
-            
-            var response = _mapper.Map<GradeResponse>(grade);
+        return response;
+    }
 
-            return response;
-        }
+    public async Task<GradeResponse> GetByIdAsync(Guid id, CancellationToken token)
+    {
+        var grade = await _gradeRepository.GetByIdAsync(id, token);
 
-        public async Task<ICollection<GradeResponse>> GetOdataAsync(SearchGradeRequest request, CancellationToken token)
-        {
-            var option = request.ToODataQueryOptions<Grade>();
-            var queryable = await _gradeRepository.GetQueryableAsync(option, token);
-            var result = queryable.ToList();
+        if (grade == null)
+            throw new Exception("Grade not fount");
 
-            return result.Select(a => 
-            new GradeResponse(a.Id, a.StudentId, a.SubjectId,a.Date, a.Value, a.Comment)).ToList();
-        }
+        var response = _mapper.Map<GradeResponse>(grade);
 
-        public async Task<bool> DeleteAsync(Guid gradeId, CancellationToken token)
-        {
-            var grade = await _gradeRepository.GetByIdAsync(gradeId, token);
+        return response;
+    }
 
-            if(grade == null)
-                return false;
+    public async Task<ICollection<GradeResponse>> GetOdataAsync(SearchGradeRequest request, CancellationToken token)
+    {
+        var option = request.ToODataQueryOptions<Grade>();
+        var queryable = await _gradeRepository.GetQueryableAsync(option, token);
+        var result = queryable.ToList();
 
-            await _gradeRepository.DeleteAsync(grade, token);
-            await _gradeRepository.SaveChangesAsync();
+        return result.Select(a =>
+            new GradeResponse(a.Id, a.StudentId, a.SubjectId, a.Date, a.Value, a.Comment)).ToList();
+    }
 
-            return true;
-        }
+    public async Task<bool> DeleteAsync(Guid gradeId, CancellationToken token)
+    {
+        var grade = await _gradeRepository.GetByIdAsync(gradeId, token);
+
+        if (grade == null)
+            return false;
+
+        await _gradeRepository.DeleteAsync(grade, token);
+        await _gradeRepository.SaveChangesAsync();
+
+        return true;
     }
 }

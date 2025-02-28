@@ -1,97 +1,89 @@
-﻿using ElectronicJournal.Application.Dtos.TeacherDtos;
+﻿using AutoMapper;
+using ElectronicJournal.Application.Dtos.TeacherDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
-using ElectronicJournal.Domain.Primitives.Enums;
-using ElectronicJournal.Domain.ValueObject;
 
-namespace ElectronicJournal.Application.Services
+namespace ElectronicJournal.Application.Services;
+
+public class TeacherService : ITeacherService
 {
-    public class TeacherService : ITeacherService
+    public readonly ITeacherRepository _teacherRepository;
+    private readonly IRegistrationRepository _registrationRepository;
+    private readonly IMapper _mapper;
+
+    public TeacherService(ITeacherRepository teacherRepository, IMapper mapper)
     {
-        public readonly ITeacherRepository _teacherRepository;
-        private readonly IRegistrationRepository _registrationRepository;
+        _teacherRepository = teacherRepository;
+        _mapper = mapper;
+    }
 
-        public TeacherService(ITeacherRepository teacherRepository)
+    public async Task<TeacherResponse> CreateAsync(CreateTeacherRequest request, CancellationToken token)
+    {
+        var isEmailTaken = await _registrationRepository.IsEmailTakenAsync(request.Email, token);
+        if (isEmailTaken)
         {
-            _teacherRepository = teacherRepository;
+            throw new InvalidOperationException("A user with this email already exists.");
         }
 
-        public async Task<TeacherResponse> CreateAsync(CreateTeacherRequest request, CancellationToken token)
-        {
-            var isEmailTaken = await _registrationRepository.IsEmailTakenAsync(request.Email, token);
-            if (isEmailTaken)
-            {
-                throw new InvalidOperationException("A user with this email already exists.");
-            }
-            var hashpassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        var hashpassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-            var teacher = new Teacher
-            {
-                FullName = new FullName(request.FirstName, request.LastName, request?.MiddleName),
-                AcademicDegree = request.AcademicDegree,
-                Description = request.Description,
-                SchollId = request.SchoolId,
-                Email = request.Email,
-                PasswordHash = hashpassword,
-                Role = UserRoleEnum.Teacher
-            };
+        var teacher = _mapper.Map<Teacher>(request);
 
-            await _teacherRepository.AddAsync(teacher, token);
-            await _teacherRepository.SaveChangesAsync();
+        var createTeacher = _teacherRepository.AddAsync(teacher, token);
+        await _teacherRepository.SaveChangesAsync();
 
-            return new TeacherResponse(teacher.Id, teacher.FullName, teacher.SchollId, teacher.AcademicDegree, teacher.Description);
-        }
+        var response = _mapper.Map<TeacherResponse>(request);
 
-        public async Task<TeacherResponse> UpdateAsync(UpdateTeacherRequest request, CancellationToken token)
-        {
-            var teacher = await _teacherRepository.GetByIdAsync(request.TeacherId, token);
+        return response;
+    }
 
-            if (teacher == null)
-                throw new Exception("Teacher not found");
+    public async Task<TeacherResponse> UpdateAsync(UpdateTeacherRequest request, CancellationToken token)
+    {
+        var teacher = await _teacherRepository.GetByIdAsync(request.TeacherId, token);
 
-            teacher.FullName = new FullName(request.FirstName, request.LastName, request?.MiddleName);
-            teacher.AcademicDegree = request.AcademicDegree;
-            teacher.Description = request.Description;
-            teacher.SchollId = request.SchoolId;
+        if (teacher == null)
+            throw new Exception("Teacher not found");
 
-            await _teacherRepository.UpdateAsync(teacher, token);
-            await _teacherRepository.SaveChangesAsync();
+        _mapper.Map(request, teacher);
 
-            return new TeacherResponse(teacher.Id, teacher.FullName, teacher.SchollId, teacher.AcademicDegree, teacher.Description);
-        }
+        await _teacherRepository.UpdateAsync(teacher, token);
+        await _teacherRepository.SaveChangesAsync();
 
-        public async Task<TeacherResponse> GetByIdAsync(Guid id, CancellationToken token)
-        {
-            var teacher = await _teacherRepository.GetByIdAsync(id, token);
+        var response = _mapper.Map<TeacherResponse>(teacher);
 
-            if (teacher == null)
-                throw new Exception("Teacher not found");
+        return response;
+    }
 
-            return new TeacherResponse(teacher.Id, teacher.FullName, teacher.SchollId, teacher.AcademicDegree, teacher.Description);
-        }
+    public async Task<TeacherResponse> GetByIdAsync(Guid id, CancellationToken token)
+    {
+        var teacher = await _teacherRepository.GetByIdAsync(id, token);
 
-        public async Task<ICollection<TeacherResponse>> GetOdataAsync(SearchTeacherRequest request, CancellationToken token)
-        {
-            var options = request.ToODataQueryOptions<Teacher>();
-            var queryable = await _teacherRepository.GetQueryableAsync(options, token);
-            var results = queryable.ToList();
+        if (teacher == null)
+            throw new Exception("Teacher not found");
 
-            return results.Select(a =>
-                new TeacherResponse(a.Id, a.FullName, a.SchollId, a.AcademicDegree, a?.Description)).ToList();
-        }
+        var response = _mapper.Map<TeacherResponse>(teacher);
 
-        public async Task<bool> DeleteAsync(Guid teacherId, CancellationToken token)
-        {
-            var teacher = await _teacherRepository.GetByIdAsync(teacherId, token);
+        return response;
+    }
 
-            if (teacher == null)
-                return false;
+    public async void GetOdataAsync(SearchTeacherRequest request, CancellationToken token)
+    {
+        var options = request.ToODataQueryOptions<Teacher>();
+        var queryable = await _teacherRepository.GetQueryableAsync(options, token);
+        var results = queryable.ToList();
+    }
 
-            await _teacherRepository.DeleteAsync(teacher, token);
-            await _teacherRepository.SaveChangesAsync();
-            
-            return true;
-        }
+    public async Task<bool> DeleteAsync(Guid teacherId, CancellationToken token)
+    {
+        var teacher = await _teacherRepository.GetByIdAsync(teacherId, token);
+
+        if (teacher == null)
+            return false;
+
+        await _teacherRepository.DeleteAsync(teacher, token);
+        await _teacherRepository.SaveChangesAsync();
+
+        return true;
     }
 }

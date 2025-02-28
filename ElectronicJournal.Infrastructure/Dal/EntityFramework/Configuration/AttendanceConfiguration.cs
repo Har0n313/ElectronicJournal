@@ -2,20 +2,19 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace ElectronicJournal.Infrastructure.Dal.EntityFramework.Configuration
+namespace ElectronicJournal.Infrastructure.Dal.EntityFramework.Configuration;
+
+internal class AttendanceConfiguration : IEntityTypeConfiguration<Attendance>
 {
-    internal class AttendanceConfiguration : IEntityTypeConfiguration<Attendance>
+    public void Configure(EntityTypeBuilder<Attendance> builder)
     {
-        public void Configure(EntityTypeBuilder<Attendance> builder)
-        {
-            builder.ToTable("Attendances");
+        builder.ToTable("Attendances");
 
-            builder.HasKey(x => x.Id);
+        builder.HasKey(x => x.Id);
 
-            builder.HasOne(a => a.Student)
-                   .WithMany(s => s.Attendances)
-                   .HasForeignKey(a => a.StudentId)
-                   .OnDelete(DeleteBehavior.Cascade);
-        }
+        builder.HasOne(a => a.Student)
+            .WithMany(s => s.Attendances)
+            .HasForeignKey(a => a.StudentId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

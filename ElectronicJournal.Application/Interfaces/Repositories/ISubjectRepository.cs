@@ -1,8 +1,7 @@
 ﻿using ElectronicJournal.Domain.Entites;
 
-namespace ElectronicJournal.Application.Interfaces.Repositories
+namespace ElectronicJournal.Application.Interfaces.Repositories;
+
+public interface ISubjectRepository : IRepository<Subject>
 {
-    public interface ISubjectRepository : IRepository<Subject>
-    {
-    }
 }

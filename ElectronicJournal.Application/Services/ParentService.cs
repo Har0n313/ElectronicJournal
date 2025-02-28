@@ -4,89 +4,88 @@ using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
 
-namespace ElectronicJournal.Application.Services
+namespace ElectronicJournal.Application.Services;
+
+public class ParentService : IParentService
 {
-    public class ParentService : IParentService
+    private readonly IParentRepository _parentRepository;
+    private readonly IRegistrationRepository _registrationRepository;
+    private readonly IMapper _mapper;
+
+    public ParentService(IParentRepository parentRepository, IMapper mapper)
     {
-        private readonly IParentRepository _parentRepository;
-        private readonly IRegistrationRepository _registrationRepository;
-        private readonly IMapper _mapper;
+        _parentRepository = parentRepository;
+        _mapper = mapper;
+    }
 
-        public ParentService(IParentRepository parentRepository, IMapper mapper)
+    public async Task<ParentResponse> CreateAsync(CreateParentRequest request, CancellationToken token)
+    {
+        var isEmailTaken = await _registrationRepository.IsEmailTakenAsync(request.Email, token);
+        if (isEmailTaken)
         {
-            _parentRepository = parentRepository;
-            _mapper = mapper;
+            throw new InvalidOperationException("A user with this email already exists.");
         }
 
-        public async Task<ParentResponse> CreateAsync(CreateParentRequest request, CancellationToken token)
-        {
-            var isEmailTaken = await _registrationRepository.IsEmailTakenAsync(request.Email, token);
-            if (isEmailTaken)
-            {
-                throw new InvalidOperationException("A user with this email already exists.");
-            }
+        var hashpassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-            var hashpassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        var parent = _mapper.Map<Parent>(request);
 
-            var parent = _mapper.Map<Parent>(request);
+        var createParent = _parentRepository.AddAsync(parent, token);
+        await _parentRepository.SaveChangesAsync();
 
-            var createParent = _parentRepository.AddAsync(parent, token);
-            await _parentRepository.SaveChangesAsync();
-            
-            var respone = _mapper.Map<ParentResponse>(createParent);
-            
-            return respone;
-        }
+        var respone = _mapper.Map<ParentResponse>(createParent);
 
-        public async Task<ParentResponse> UpdateAsync(UpdateParentRequest request, CancellationToken token)
-        {
-            var parent = await _parentRepository.GetByIdAsync(request.ParentId, token);
+        return respone;
+    }
 
-            if (parent == null)
-                throw new Exception("Parent not found");
+    public async Task<ParentResponse> UpdateAsync(UpdateParentRequest request, CancellationToken token)
+    {
+        var parent = await _parentRepository.GetByIdAsync(request.ParentId, token);
 
-            _mapper.Map(request, parent);
+        if (parent == null)
+            throw new Exception("Parent not found");
 
-            await _parentRepository.UpdateAsync(parent, token);
-            await _parentRepository.SaveChangesAsync();
-            
-            var respone = _mapper.Map<ParentResponse>(parent);
+        _mapper.Map(request, parent);
 
-            return respone;
+        await _parentRepository.UpdateAsync(parent, token);
+        await _parentRepository.SaveChangesAsync();
 
-        }
+        var respone = _mapper.Map<ParentResponse>(parent);
 
-        public async Task<ParentResponse> GetByIdAsync(Guid id, CancellationToken token)
-        {
-            var parent = await _parentRepository.GetByIdAsync(id, token);
+        return respone;
+    }
 
-            if (parent == null)
-                throw new Exception("Parent not found");
-            
-            var response = _mapper.Map<ParentResponse>(parent);
+    public async Task<ParentResponse> GetByIdAsync(Guid id, CancellationToken token)
+    {
+        var parent = await _parentRepository.GetByIdAsync(id, token);
 
-            return response;
-        }
-        public async Task<ICollection<ParentResponse>> GetOdataAsync(SearchParentRequest request, CancellationToken token)
-        {
-            var options = request.ToODataQueryOptions<Parent>();
-            var queryable = await _parentRepository.GetQueryableAsync(options, token);
-            var result = queryable.ToList();
+        if (parent == null)
+            throw new Exception("Parent not found");
 
-            return (ICollection<ParentResponse>)result;
-        }
+        var response = _mapper.Map<ParentResponse>(parent);
 
-        public async Task<bool> DeleteAsync(Guid parentId, CancellationToken token)
-        {
-            var parent = await _parentRepository.GetByIdAsync(parentId, token);
+        return response;
+    }
 
-            if(parent == null)
-                return false;
+    public async Task<ICollection<ParentResponse>> GetOdataAsync(SearchParentRequest request, CancellationToken token)
+    {
+        var options = request.ToODataQueryOptions<Parent>();
+        var queryable = await _parentRepository.GetQueryableAsync(options, token);
+        var result = queryable.ToList();
 
-            await _parentRepository.DeleteAsync(parent, token);
-            await _parentRepository.SaveChangesAsync();
+        return (ICollection<ParentResponse>)result;
+    }
 
-            return true;
-        }
+    public async Task<bool> DeleteAsync(Guid parentId, CancellationToken token)
+    {
+        var parent = await _parentRepository.GetByIdAsync(parentId, token);
+
+        if (parent == null)
+            return false;
+
+        await _parentRepository.DeleteAsync(parent, token);
+        await _parentRepository.SaveChangesAsync();
+
+        return true;
     }
 }

@@ -1,13 +1,11 @@
-﻿
-using Microsoft.AspNetCore.OData.Query;
+﻿using Microsoft.AspNetCore.OData.Query;
 
-namespace ElectronicJournal.Application.Dtos.AttendanceDtos
+namespace ElectronicJournal.Application.Dtos.AttendanceDtos;
+
+public sealed record SearchAttendanceRequest(Guid? StudentId = null, DateTime? Date = null, bool? Status = null)
 {
-    public sealed record SearchAttendanceRequest(Guid? StudentId = null, DateTime? Date = null, bool? Status = null)
+    public ODataQueryOptions<T> ToODataQueryOptions<T>()
     {
-        public ODataQueryOptions<T> ToODataQueryOptions<T>()
-        {
-            throw new NotImplementedException();
-        }
+        throw new NotImplementedException();
     }
 }

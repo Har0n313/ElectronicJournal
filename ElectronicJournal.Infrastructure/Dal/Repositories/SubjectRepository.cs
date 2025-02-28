@@ -2,13 +2,6 @@
 using ElectronicJournal.Domain.Entites;
 using ElectronicJournal.Infrastructure.Dal.EntityFramework;
 
-namespace ElectronicJournal.Infrastructure.Dal.Repositories
-{
-    public class SubjectRepository : BaseRepository<Subject>, ISubjectRepository
-    {
-        public SubjectRepository(ElectronicJornalDbContext context) : base(context)
-        {
+namespace ElectronicJournal.Infrastructure.Dal.Repositories;
 
-        }
-    }
-}
+public class SubjectRepository(ElectronicJornalDbContext context) : BaseRepository<Subject>(context), ISubjectRepository;

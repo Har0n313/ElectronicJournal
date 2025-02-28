@@ -1,13 +1,15 @@
-﻿
-using Microsoft.AspNetCore.OData.Query;
+﻿using Microsoft.AspNetCore.OData.Query;
 
-namespace ElectronicJournal.Application.Dtos.ScheduleDtos
+namespace ElectronicJournal.Application.Dtos.ScheduleDtos;
+
+public sealed record SearchScheduleRequest(
+    Guid? SchoolClassId = null,
+    Guid? SubjectId = null,
+    DateTime? Date = null,
+    TimeSpan? Time = null)
 {
-    public sealed record SearchScheduleRequest(Guid? SchoolClassId = null, Guid? SubjectId = null, DateTime? Date = null, TimeSpan? Time = null)
+    public ODataQueryOptions<T> ToODataQueryOptions<T>()
     {
-        public ODataQueryOptions<T> ToODataQueryOptions<T>()
-        {
-            throw new NotImplementedException();
-        }
+        throw new NotImplementedException();
     }
 }
