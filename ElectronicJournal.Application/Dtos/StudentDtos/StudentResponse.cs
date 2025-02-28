@@ -1,4 +1,5 @@
-﻿using ElectronicJournal.Domain.ValueObject;
+﻿
+using ElectronicJournal.Domain.ValueObject;
 
 namespace ElectronicJournal.Application.Dtos.StudentDtos;
 

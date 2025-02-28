@@ -65,7 +65,7 @@ ConfigureMiddleware(app);
 app.Run();
 
 /// <summary>
-/// Конфигурация сервисов
+/// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 /// </summary>
 void ConfigureServices(IServiceCollection services, IConfiguration configuration)
 {
@@ -100,7 +100,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
 }
 
 /// <summary>
-/// Конфигурация middleware приложения
+/// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ middleware пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 /// </summary>
 void ConfigureMiddleware(WebApplication app)
 {
