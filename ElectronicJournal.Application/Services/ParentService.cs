@@ -1,82 +1,91 @@
-﻿using ElectronicJournal.Application.Dtos.ParentDtos;
+﻿using AutoMapper;
+using ElectronicJournal.Application.Dtos.ParentDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
-using ElectronicJournal.Domain.ValueObject;
-using System.Linq;
 
-namespace ElectronicJournal.Application.Services
+namespace ElectronicJournal.Application.Services;
+
+public class ParentService : IParentService
 {
-    public class ParentService : IParentService
+    private readonly IParentRepository _parentRepository;
+    private readonly IRegistrationRepository _registrationRepository;
+    private readonly IMapper _mapper;
+
+    public ParentService(IParentRepository parentRepository, IMapper mapper)
     {
-        public readonly IParentRepository _parentRepository;
+        _parentRepository = parentRepository;
+        _mapper = mapper;
+    }
 
-        public ParentService(IParentRepository parentRepository)
+    public async Task<ParentResponse> CreateAsync(CreateParentRequest request, CancellationToken token)
+    {
+        var isEmailTaken = await _registrationRepository.IsEmailTakenAsync(request.Email, token);
+        if (isEmailTaken)
         {
-            _parentRepository = parentRepository;
+            throw new InvalidOperationException("A user with this email already exists.");
         }
 
-        public async Task<ParentResponse> CreateAsync(CreateParentRequest request, CancellationToken token)
-        {
-            var parent = new Parent
-            {
-                FullName = new FullName(request.FirstName, request.LastName, request?.MiddleName),
-                DateofBirth = request.dateofBith,
-            };
+        var hashpassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-            await _parentRepository.AddAsync(parent, token);
-            await _parentRepository.SaveChangesAsync();
+        var parent = _mapper.Map<Parent>(request);
 
-            return new ParentResponse(parent.Id, parent.FullName, parent.DateofBirth);
-        }
+        var createParent = _parentRepository.AddAsync(parent, token);
+        await _parentRepository.SaveChangesAsync();
 
-        public async Task<ParentResponse> UpdateAsync(UpdateParentRequest request, CancellationToken token)
-        {
-            var parent = await _parentRepository.GetByIdAsync(request.ParentId, token);
+        var respone = _mapper.Map<ParentResponse>(createParent);
 
-            if (parent == null)
-                throw new Exception("Parent not found");
+        return respone;
+    }
 
-            parent.FullName = new FullName(request.FirstName, request.LastName, request?.MiddleName);
-            parent.DateofBirth = request.dateOfBith;
+    public async Task<ParentResponse> UpdateAsync(UpdateParentRequest request, CancellationToken token)
+    {
+        var parent = await _parentRepository.GetByIdAsync(request.ParentId, token);
 
-            await _parentRepository.UpdateAsync(parent, token);
-            await _parentRepository.SaveChangesAsync();
+        if (parent == null)
+            throw new Exception("Parent not found");
 
-            return new ParentResponse(parent.Id,parent.FullName, parent.DateofBirth);
+        _mapper.Map(request, parent);
 
-        }
+        await _parentRepository.UpdateAsync(parent, token);
+        await _parentRepository.SaveChangesAsync();
 
-        public async Task<ParentResponse> GetByIdAsync(Guid id, CancellationToken token)
-        {
-            var parent = await _parentRepository.GetByIdAsync(id, token);
+        var respone = _mapper.Map<ParentResponse>(parent);
 
-            if (parent == null)
-                throw new Exception("Parent not found");
+        return respone;
+    }
 
-            return new ParentResponse(parent.Id, parent.FullName, parent.DateofBirth);
-        }
-        public async Task<ICollection<ParentResponse>> GetOdataAsync(SearchParentRequest request, CancellationToken token)
-        {
-            var options = request.ToODataQueryOptions<Parent>();
-            var queryable = await _parentRepository.GetQueryableAsync(options, token);
-            var result = queryable.ToList();
+    public async Task<ParentResponse> GetByIdAsync(Guid id, CancellationToken token)
+    {
+        var parent = await _parentRepository.GetByIdAsync(id, token);
 
-            return result.Select(a =>
-                new ParentResponse(a.Id, a.FullName, a.DateofBirth)).ToList();
-        }
+        if (parent == null)
+            throw new Exception("Parent not found");
 
-        public async Task<bool> DeleteAsync(Guid parentId, CancellationToken token)
-        {
-            var parent = await _parentRepository.GetByIdAsync(parentId, token);
+        var response = _mapper.Map<ParentResponse>(parent);
 
-            if(parent == null)
-                return false;
+        return response;
+    }
 
-            await _parentRepository.DeleteAsync(parent, token);
-            await _parentRepository.SaveChangesAsync();
+    public async Task<ICollection<ParentResponse>> GetOdataAsync(SearchParentRequest request, CancellationToken token)
+    {
+        var options = request.ToODataQueryOptions<Parent>();
+        var queryable = await _parentRepository.GetQueryableAsync(options, token);
+        var result = queryable.ToList();
 
-            return true;
-        }
+        return (ICollection<ParentResponse>)result;
+    }
+
+    public async Task<bool> DeleteAsync(Guid parentId, CancellationToken token)
+    {
+        var parent = await _parentRepository.GetByIdAsync(parentId, token);
+
+        if (parent == null)
+            return false;
+
+        await _parentRepository.DeleteAsync(parent, token);
+        await _parentRepository.SaveChangesAsync();
+
+        return true;
     }
 }

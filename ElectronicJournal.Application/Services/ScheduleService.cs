@@ -1,84 +1,83 @@
-﻿using ElectronicJournal.Application.Dtos.ScheduleDtos;
+﻿using AutoMapper;
+using ElectronicJournal.Application.Dtos.ScheduleDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
 
-namespace ElectronicJournal.Application.Services
+namespace ElectronicJournal.Application.Services;
+
+public class ScheduleService : IScheduleService
 {
-    public class ScheduleService : IScheduleService
+    private readonly IScheduleRepository _scheduleRepository;
+    private readonly IMapper _mapper;
+
+    public ScheduleService(IScheduleRepository scheduleRepository, IMapper mapper)
     {
-        public readonly IScheduleRepository _scheduleRepository;
+        _scheduleRepository = scheduleRepository;
+        _mapper = mapper;
+    }
 
-        public ScheduleService(IScheduleRepository scheduleRepository)
-        {
-            _scheduleRepository = scheduleRepository;
-        }
+    public async Task<ScheduleResponse> CreateAsync(CreateScheduleRequest request, CancellationToken token)
+    {
+        var schedule = _mapper.Map<Schedule>(request);
 
-        public async Task<ScheduleResponse> CreateAsync(CreateScheduleRequest request, CancellationToken token)
-        {
-            var schedule = new Schedule
-            {
-                SchoolClassId = request.SchoolClassId,
-                SubjectId = request.SubjectId,
-                Date = request.Date,
-                Time = request.Time
-            };
+        var createSchedule = _scheduleRepository.AddAsync(schedule, token);
+        await _scheduleRepository.SaveChangesAsync();
 
-            await _scheduleRepository.AddAsync(schedule, token);
-            await _scheduleRepository.SaveChangesAsync();
+        var response = _mapper.Map<ScheduleResponse>(createSchedule);
 
-            return new ScheduleResponse(schedule.Id, schedule.SchoolClassId, schedule.SubjectId, schedule.Date, schedule.Time);
-        }
-        public async Task<ScheduleResponse> UpdateAsync(UpdateScheduleRequest request, CancellationToken token)
-        {
-            var schedule = await _scheduleRepository.GetByIdAsync(request.ScheduleId, token);
+        return response;
+    }
 
-            if (schedule == null)
-                throw new Exception("Schedule not found");
+    public async Task<ScheduleResponse> UpdateAsync(UpdateScheduleRequest request, CancellationToken token)
+    {
+        var schedule = await _scheduleRepository.GetByIdAsync(request.ScheduleId, token);
 
-            schedule.SchoolClassId = request.SchoolClassId;
-            schedule.SubjectId = request.SubjectId;
-            schedule.Date = request.Date;
-            schedule.Time = request.Time;
+        if (schedule == null)
+            throw new Exception("Schedule not found");
 
-            await _scheduleRepository.UpdateAsync(schedule, token);
-            await _scheduleRepository.SaveChangesAsync();
+        _mapper.Map(request, schedule);
 
-            return new ScheduleResponse(schedule.Id, schedule.SchoolClassId, schedule.SubjectId, schedule.Date, schedule.Time);
+        await _scheduleRepository.UpdateAsync(schedule, token);
+        await _scheduleRepository.SaveChangesAsync();
 
-        }
+        var response = _mapper.Map<ScheduleResponse>(schedule);
 
-        public async Task<ScheduleResponse> GetByIdAsync(Guid id, CancellationToken token)
-        {
-            var schedule = await _scheduleRepository.GetByIdAsync(id, token);
+        return response;
+    }
 
-            if (schedule == null)
-                throw new Exception("Schedule not found");
+    public async Task<ScheduleResponse> GetByIdAsync(Guid id, CancellationToken token)
+    {
+        var schedule = await _scheduleRepository.GetByIdAsync(id, token);
 
-            return new ScheduleResponse(schedule.Id, schedule.SchoolClassId, schedule.SubjectId, schedule.Date, schedule.Time);
-        }
+        if (schedule == null)
+            throw new Exception("Schedule not found");
 
-        public async Task<ICollection<ScheduleResponse>> GetOdataAsync(SearchScheduleRequest request, CancellationToken token)
-        {
-            var options = request.ToODataQueryOptions<Schedule>();
-            var queryable = await _scheduleRepository.GetQueryableAsync(options, token);
-            var results = queryable.ToList();
+        var response = _mapper.Map<ScheduleResponse>(schedule);
 
-            return results.Select(a =>
-                new ScheduleResponse(a.Id, a.SchoolClassId, a.SubjectId, a.Date, a.Time)).ToList();
-        }
-        public async Task<bool> DeleteAsync(Guid scheduleId, CancellationToken token)
-        {
-            var schedule = await _scheduleRepository.GetByIdAsync(scheduleId, token);
+        return response;
+    }
 
-            if (schedule == null) 
-                return false;
+    public async Task<ICollection<ScheduleResponse>> GetOdataAsync(SearchScheduleRequest request,
+        CancellationToken token)
+    {
+        var options = request.ToODataQueryOptions<Schedule>();
+        var queryable = await _scheduleRepository.GetQueryableAsync(options, token);
+        var results = queryable.ToList();
 
-            await _scheduleRepository.DeleteAsync(schedule, token);
-            await _scheduleRepository.SaveChangesAsync();
-            return true;
-        }
+        return results.Select(a =>
+            new ScheduleResponse(a.Id, a.SchoolClassId, a.SubjectId, a.Date, a.Time)).ToList();
+    }
 
+    public async Task<bool> DeleteAsync(Guid scheduleId, CancellationToken token)
+    {
+        var schedule = await _scheduleRepository.GetByIdAsync(scheduleId, token);
 
+        if (schedule == null)
+            return false;
+
+        await _scheduleRepository.DeleteAsync(schedule, token);
+        await _scheduleRepository.SaveChangesAsync();
+        return true;
     }
 }

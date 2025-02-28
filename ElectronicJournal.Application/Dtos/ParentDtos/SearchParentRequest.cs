@@ -1,13 +1,15 @@
-﻿
-using Microsoft.AspNetCore.OData.Query;
+﻿using Microsoft.AspNetCore.OData.Query;
 
-namespace ElectronicJournal.Application.Dtos.ParentDtos
+namespace ElectronicJournal.Application.Dtos.ParentDtos;
+
+public sealed record SearchParentRequest(
+    string? FirstName = null,
+    string? LastName = null,
+    string? MiddleName = null,
+    Guid? StudentId = null)
 {
-    public sealed record SearchParentRequest(string? FirstName = null, string? LastName = null, string? MiddleName = null, Guid? StudentId = null)
+    public ODataQueryOptions<T> ToODataQueryOptions<T>()
     {
-        public ODataQueryOptions<T> ToODataQueryOptions<T>()
-        {
-            throw new NotImplementedException();
-        }
+        throw new NotImplementedException();
     }
 }

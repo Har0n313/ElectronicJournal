@@ -13,6 +13,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<IGradeService, GradeService>();
@@ -63,7 +65,7 @@ ConfigureMiddleware(app);
 app.Run();
 
 /// <summary>
-/// Конфигурация сервисов
+/// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 /// </summary>
 void ConfigureServices(IServiceCollection services, IConfiguration configuration)
 {
@@ -98,7 +100,7 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
 }
 
 /// <summary>
-/// Конфигурация middleware приложения
+/// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ middleware пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 /// </summary>
 void ConfigureMiddleware(WebApplication app)
 {

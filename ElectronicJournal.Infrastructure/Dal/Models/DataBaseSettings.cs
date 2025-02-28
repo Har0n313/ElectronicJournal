@@ -1,8 +1,7 @@
-﻿namespace ElectronicJournal.Infrastructure.Dal.Models
+﻿namespace ElectronicJournal.Infrastructure.Dal.Models;
+
+public class DataBaseSettings
 {
-    public class DataBaseSettings
-    {
-        public string ConnectionStrings { get; set; }
-        public int CommandTimeout { get; set; }
-    }
+    public string? ConnectionStrings { get; init; }
+    public int CommandTimeout { get; init; }
 }

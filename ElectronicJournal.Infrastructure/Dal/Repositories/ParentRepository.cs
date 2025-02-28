@@ -2,12 +2,6 @@
 using ElectronicJournal.Domain.Entites;
 using ElectronicJournal.Infrastructure.Dal.EntityFramework;
 
-namespace ElectronicJournal.Infrastructure.Dal.Repositories
-{
-    public class ParentRepository : BaseRepository<Parent>, IParentRepository
-    {
-        public ParentRepository(ElectronicJornalDbContext context) : base(context)
-        {
-        }
-    }
-}
+namespace ElectronicJournal.Infrastructure.Dal.Repositories;
+
+public class ParentRepository(ElectronicJornalDbContext context) : BaseRepository<Parent>(context), IParentRepository;

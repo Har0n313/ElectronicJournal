@@ -1,81 +1,84 @@
-﻿using ElectronicJournal.Application.Dtos.SchoolDtos;
+﻿using AutoMapper;
+using ElectronicJournal.Application.Dtos.SchoolDtos;
 using ElectronicJournal.Application.Interfaces.Repositories;
 using ElectronicJournal.Application.Interfaces.Services;
 using ElectronicJournal.Domain.Entites;
 
-namespace ElectronicJournal.Application.Services
+namespace ElectronicJournal.Application.Services;
+
+public class SchoolService : ISchoolService
 {
-    public class SchoolService : ISchoolService
+    private readonly ISchoolRepository _schoolRepository;
+    private readonly IMapper _mapper;
+
+    public SchoolService(ISchoolRepository schoolRepository, IMapper mapper)
     {
-        public readonly ISchoolRepository _schoolRepository;
+        _schoolRepository = schoolRepository;
+        _mapper = mapper;
+    }
 
-        public SchoolService(ISchoolRepository schoolRepository)
-        {
-            _schoolRepository = schoolRepository;
-        }
+    public async Task<SchoolResponse> CreateAsync(CreateSchoolRequest request, CancellationToken token)
+    {
+        var school = _mapper.Map<School>(request);
 
-        public async Task<SchoolResponse> CreateAsync(CreateSchoolRequest request, CancellationToken token)
-        {
-            var school = new School
-            {
-                Name = request.Name,
-                Address = request.Address,
-                Description = request.Description,
-            };
+        var createdSchool = await _schoolRepository.AddAsync(school, token);
+        await _schoolRepository.SaveChangesAsync();
 
-            await _schoolRepository.AddAsync(school,token);
-            await _schoolRepository.SaveChangesAsync();
+        var response = _mapper.Map<SchoolResponse>(createdSchool);
 
-            return new SchoolResponse(school.Id, school.Name, school.Address, school?.Description);
-        }
+        return response;
+    }
 
-        public async Task<SchoolResponse> UpdateAsync(UpdateSchoolRequest request, CancellationToken token)
-        {
-            var school = await _schoolRepository.GetByIdAsync(request.SchoolId, token);
 
-            if (school == null)
-                throw new Exception("School not found");
+    public async Task<SchoolResponse> UpdateAsync(UpdateSchoolRequest request, CancellationToken token)
+    {
+        var school = await _schoolRepository.GetByIdAsync(request.SchoolId, token);
 
-            school.Name = request.Name;
-            school.Address = request.Address;
-            school.Description = request.Description;
+        if (school == null)
+            throw new Exception("School not found");
 
-            await _schoolRepository.UpdateAsync(school,token);
-            await _schoolRepository.SaveChangesAsync();
+        _mapper.Map(request, school);
 
-            return new SchoolResponse(school.Id, school.Name, school.Address, school?.Description);
-        }
+        await _schoolRepository.UpdateAsync(school, token);
+        await _schoolRepository.SaveChangesAsync();
 
-        public async Task<SchoolResponse> GetByIdAsync(Guid id, CancellationToken token)
-        {
-            var school = await _schoolRepository.GetByIdAsync(id, token);
+        var response = _mapper.Map<SchoolResponse>(school);
 
-            if (school == null)
-                throw new Exception("School not found");
+        return response;
+    }
 
-            return new SchoolResponse(school.Id, school.Name, school.Address, school?.Description);
-        }
 
-        public async Task<ICollection<SchoolResponse>> GetOdataAsync(SearchSchoolRequest request, CancellationToken token)
-        {
-            var queryable = await _schoolRepository.GetQueryableAsync(request.ODataOptions, token);
-            var results = queryable.ToList();
+    public async Task<SchoolResponse> GetByIdAsync(Guid id, CancellationToken token)
+    {
+        var school = await _schoolRepository.GetByIdAsync(id, token);
 
-            return results.Select(a =>
-                new SchoolResponse(a.Id, a.Name, a.Address, a.Description)).ToList();
-        }
+        if (school == null)
+            throw new Exception("School not found");
 
-        public async Task<bool> DeleteAsync(Guid schoolId, CancellationToken token)
-        {
-            var school = await _schoolRepository.GetByIdAsync(schoolId, token);
+        var response = _mapper.Map<SchoolResponse>(school);
 
-            if (school == null)
-                return false;
+        return response;
+    }
 
-            await _schoolRepository.DeleteAsync(school, token);
-            await _schoolRepository.SaveChangesAsync();
-            
-            return true;
-        }
+    public async Task<ICollection<SchoolResponse>> GetOdataAsync(SearchSchoolRequest request, CancellationToken token)
+    {
+        var queryable = await _schoolRepository.GetQueryableAsync(request.ODataOptions, token);
+        var results = queryable.ToList();
+
+        return results.Select(a =>
+            new SchoolResponse(a.Id, a.Name, a.Address, a.Description)).ToList();
+    }
+
+    public async Task<bool> DeleteAsync(Guid schoolId, CancellationToken token)
+    {
+        var school = await _schoolRepository.GetByIdAsync(schoolId, token);
+
+        if (school == null)
+            return false;
+
+        await _schoolRepository.DeleteAsync(school, token);
+        await _schoolRepository.SaveChangesAsync();
+
+        return true;
     }
 }
